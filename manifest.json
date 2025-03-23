@@ -1,0 +1,22 @@
+{
+  "name": "Álbum de Lembranças do Bebê",
+  "short_name": "Álbum Bebê",
+  "description": "Um aplicativo para armazenar memórias do seu bebê.",
+  "start_url": "./AlbumDigitalBebe.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "form_factor": "wide"
+}

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Álbum de Lembranças da Ana Lua</title>
+    <link rel="manifest" href="manifest.json" />
+    <script>
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker
+          .register("service-worker.js")
+          .then(() => console.log("Service Worker registrado!"))
+          .catch((err) =>
+            console.log("Erro ao registrar o Service Worker:", err)
+          );
+      }
+    </script>
+    <style>
+      body {
+        background-color: #fce4ec; /* Rosa claro */
+        background-image: radial-gradient(circle, #ffccbc, #ffe0b2, #c5cae9);
+      }
+      .container {
+        max-width: 600px;
+        margin: auto;
+        padding: 20px;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.9);
+      }
+      input,
+      textarea,
+      button {
+        width: 100%;
+        margin: 10px 0;
+        padding: 10px;
+        border-radius: 5px;
+        border: 1px solid #ccc;
+      }
+      .memory {
+        border: 1px solid #ddd;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+        position: relative;
+      }
+      img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 5px;
+      }
+      .delete-btn {
+        background: red;
+        color: white;
+        border: none;
+        padding: 5px 10px;
+        cursor: pointer;
+        border-radius: 5px;
+        position: relative;
+        top: 10px;
+        right: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Álbum de Lembranças da Ana Lua</h1>
+      <input type="text" id="titulo" placeholder="Título da lembrança" />
+      <textarea
+        id="descricao"
+        placeholder="Escreva sua lembrança aqui..."
+      ></textarea>
+      <input type="file" id="imagem" accept="image/*" />
+      <button onclick="salvarMemoria()">Salvar Memória</button>
+      <div id="memorias"></div>
+    </div>
+
+    <script>
+      function salvarMemoria() {
+        const titulo = document.getElementById("titulo").value;
+        const descricao = document.getElementById("descricao").value;
+        const imagemInput = document.getElementById("imagem");
+
+        if (titulo === "" || descricao === "") {
+          alert("Por favor, preencha todos os campos.");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const imagemBase64 = event.target.result;
+          const memoria = { titulo, descricao, imagem: imagemBase64 };
+          let memorias = JSON.parse(localStorage.getItem("memorias")) || [];
+          memorias.push(memoria);
+          localStorage.setItem("memorias", JSON.stringify(memorias));
+          exibirMemorias();
+        };
+
+        if (imagemInput.files.length > 0) {
+          reader.readAsDataURL(imagemInput.files[0]);
+        } else {
+          const memoria = { titulo, descricao, imagem: "" };
+          let memorias = JSON.parse(localStorage.getItem("memorias")) || [];
+          memorias.push(memoria);
+          localStorage.setItem("memorias", JSON.stringify(memorias));
+          exibirMemorias();
+        }
+      }
+
+      function exibirMemorias() {
+        const memoriasDiv = document.getElementById("memorias");
+        memoriasDiv.innerHTML = "";
+        const memorias = JSON.parse(localStorage.getItem("memorias")) || [];
+        memorias.forEach((memoria, index) => {
+          const memoriaDiv = document.createElement("div");
+          memoriaDiv.classList.add("memory");
+          memoriaDiv.innerHTML =
+            `<h3>${memoria.titulo}</h3><p>${memoria.descricao}</p>` +
+            (memoria.imagem
+              ? `<img src="${memoria.imagem}" alt="Imagem da memória">`
+              : "") +
+            `<button class="delete-btn" onclick="deletarMemoria(${index})">X</button>`;
+          memoriasDiv.appendChild(memoriaDiv);
+        });
+      }
+
+      function deletarMemoria(index) {
+        let memorias = JSON.parse(localStorage.getItem("memorias")) || [];
+        memorias.splice(index, 1);
+        localStorage.setItem("memorias", JSON.stringify(memorias));
+        exibirMemorias();
+      }
+
+      document.addEventListener("DOMContentLoaded", exibirMemorias);
+    </script>
+  </body>
+</html>
