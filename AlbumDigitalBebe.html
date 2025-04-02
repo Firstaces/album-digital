@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Álbum de Lembranças da Ana Lua</title>
+    <title>Álbum de Lembranças do Bebê</title>
     <link rel="manifest" href="manifest.json" />
     <script>
       if ("serviceWorker" in navigator) {
@@ -58,7 +58,7 @@
         padding: 5px 10px;
         cursor: pointer;
         border-radius: 5px;
-        position: relative;
+        position: absolute;
         top: 10px;
         right: 10px;
       }
@@ -66,7 +66,7 @@
   </head>
   <body>
     <div class="container">
-      <h1>Álbum de Lembranças da Ana Lua</h1>
+      <h1>Álbum de Lembranças do Bebê</h1>
       <input type="text" id="titulo" placeholder="Título da lembrança" />
       <textarea
         id="descricao"
@@ -78,6 +78,29 @@
     </div>
 
     <script>
+      let db;
+
+      // Abrir ou Criar IndexedDB
+      function iniciarDB() {
+        let request = indexedDB.open("MemoriasDB", 1);
+        request.onupgradeneeded = function (event) {
+          db = event.target.result;
+          if (!db.objectStoreNames.contains("memorias")) {
+            db.createObjectStore("memorias", {
+              keyPath: "id",
+              autoIncrement: true,
+            });
+          }
+        };
+        request.onsuccess = function (event) {
+          db = event.target.result;
+          exibirMemorias();
+        };
+        request.onerror = function (event) {
+          console.error("Erro ao abrir IndexedDB:", event.target.errorCode);
+        };
+      }
+
       function salvarMemoria() {
         const titulo = document.getElementById("titulo").value;
         const descricao = document.getElementById("descricao").value;
@@ -91,49 +114,69 @@
         const reader = new FileReader();
         reader.onload = function (event) {
           const imagemBase64 = event.target.result;
-          const memoria = { titulo, descricao, imagem: imagemBase64 };
-          let memorias = JSON.parse(localStorage.getItem("memorias")) || [];
-          memorias.push(memoria);
-          localStorage.setItem("memorias", JSON.stringify(memorias));
-          exibirMemorias();
+          let memoria = { titulo, descricao, imagem: imagemBase64 };
+
+          let transaction = db.transaction(["memorias"], "readwrite");
+          let store = transaction.objectStore("memorias");
+          store.add(memoria);
+
+          transaction.oncomplete = function () {
+            console.log("Memória salva!");
+            exibirMemorias();
+          };
         };
 
         if (imagemInput.files.length > 0) {
           reader.readAsDataURL(imagemInput.files[0]);
         } else {
-          const memoria = { titulo, descricao, imagem: "" };
-          let memorias = JSON.parse(localStorage.getItem("memorias")) || [];
-          memorias.push(memoria);
-          localStorage.setItem("memorias", JSON.stringify(memorias));
-          exibirMemorias();
+          let memoria = { titulo, descricao, imagem: "" };
+          let transaction = db.transaction(["memorias"], "readwrite");
+          let store = transaction.objectStore("memorias");
+          store.add(memoria);
+
+          transaction.oncomplete = function () {
+            console.log("Memória salva!");
+            exibirMemorias();
+          };
         }
       }
 
       function exibirMemorias() {
         const memoriasDiv = document.getElementById("memorias");
         memoriasDiv.innerHTML = "";
-        const memorias = JSON.parse(localStorage.getItem("memorias")) || [];
-        memorias.forEach((memoria, index) => {
-          const memoriaDiv = document.createElement("div");
-          memoriaDiv.classList.add("memory");
-          memoriaDiv.innerHTML =
-            `<h3>${memoria.titulo}</h3><p>${memoria.descricao}</p>` +
-            (memoria.imagem
-              ? `<img src="${memoria.imagem}" alt="Imagem da memória">`
-              : "") +
-            `<button class="delete-btn" onclick="deletarMemoria(${index})">X</button>`;
-          memoriasDiv.appendChild(memoriaDiv);
-        });
+
+        let transaction = db.transaction(["memorias"], "readonly");
+        let store = transaction.objectStore("memorias");
+        let request = store.getAll();
+
+        request.onsuccess = function () {
+          let memorias = request.result;
+          memorias.forEach((memoria, index) => {
+            const memoriaDiv = document.createElement("div");
+            memoriaDiv.classList.add("memory");
+            memoriaDiv.innerHTML =
+              `<h3>${memoria.titulo}</h3><p>${memoria.descricao}</p>` +
+              (memoria.imagem
+                ? `<img src="${memoria.imagem}" alt="Imagem da memória">`
+                : "") +
+              `<button class="delete-btn" onclick="deletarMemoria(${memoria.id})">X</button>`;
+            memoriasDiv.appendChild(memoriaDiv);
+          });
+        };
       }
 
-      function deletarMemoria(index) {
-        let memorias = JSON.parse(localStorage.getItem("memorias")) || [];
-        memorias.splice(index, 1);
-        localStorage.setItem("memorias", JSON.stringify(memorias));
-        exibirMemorias();
+      function deletarMemoria(id) {
+        let transaction = db.transaction(["memorias"], "readwrite");
+        let store = transaction.objectStore("memorias");
+        store.delete(id);
+
+        transaction.oncomplete = function () {
+          console.log("Memória deletada!");
+          exibirMemorias();
+        };
       }
 
-      document.addEventListener("DOMContentLoaded", exibirMemorias);
+      document.addEventListener("DOMContentLoaded", iniciarDB);
     </script>
   </body>
 </html>
